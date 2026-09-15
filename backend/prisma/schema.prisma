@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+// Klassificering av konto för resultat- och balansrapport samt bokslut.
+enum AccountType {
+  TILLGANG // 1xxx  (balansräkning – tillgångar)
+  SKULD // 2xxx  (balansräkning – skulder)
+  EGET_KAPITAL // 2xxx  (balansräkning – eget kapital)
+  INTAKT // 3xxx / 8xxx intäkter (resultaträkning)
+  KOSTNAD // 4xxx–7xxx / 8xxx kostnader (resultaträkning)
+}
+
+// ─── AUTH ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(ADMIN)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+// ─── FÖRETAG ─────────────────────────────────────────────────────────────────
+
+model Company {
+  id         String   @id @default(cuid())
+  name       String
+  orgNumber  String? // personnummer / organisationsnummer
+  vatNumber  String?
+  address    String?
+  postalCode String?
+  city       String?
+  email      String?
+  phone      String?
+  currency   String   @default("SEK")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("companies")
+}
+
+// ─── BOKFÖRING ───────────────────────────────────────────────────────────────
+
+// Räkenskapsår. För enskild firma = kalenderår.
+model FiscalYear {
+  id        String   @id @default(cuid())
+  label     String   @unique // t.ex. "2025"
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  isClosed  Boolean  @default(false) // true = bokslut låst, verifikationer kan ej ändras
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  verifications Verification[]
+
+  @@map("fiscal_years")
+}
+
+// Konto i kontoplanen (BAS-baserad, avskalad).
+model Account {
+  id       String      @id @default(cuid())
+  number   Int         @unique // BAS-kontonummer, t.ex. 1930
+  name     String // svenskt kontonamn
+  type     AccountType
+  vatRate  Decimal?    @db.Decimal(5, 2) // förberedelse för auto-moms (fas 2)
+  sruCode  String? // förberedelse för NE-mappning (fas 4)
+  isActive Boolean     @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rows VerificationRow[]
+
+  @@map("accounts")
+}
+
+// Verifikation – en bokförd affärshändelse.
+model Verification {
+  id           String     @id @default(cuid())
+  number       Int // obruten serie PER räkenskapsår, börjar på 1
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  date         DateTime   @db.Date // verifikationsdatum (transaktionsdatum)
+  description  String // verifikationstext
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  rows VerificationRow[]
+
+  @@unique([fiscalYearId, number])
+  @@index([fiscalYearId])
+  @@index([date])
+  @@map("verifications")
+}
+
+// Konteringsrad – debet eller kredit mot ett konto.
+model VerificationRow {
+  id             String       @id @default(cuid())
+  verificationId String
+  verification   Verification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+  debit          Decimal      @default(0) @db.Decimal(12, 2)
+  credit         Decimal      @default(0) @db.Decimal(12, 2)
+  description    String?
+  sortOrder      Int          @default(0)
+
+  @@index([verificationId])
+  @@index([accountId])
+  @@map("verification_rows")
+}
