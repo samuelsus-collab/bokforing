@@ -7,6 +7,8 @@ import { FiscalYearsPage } from '@/pages/fiscalYears/FiscalYearsPage'
 import { VerificationsPage } from '@/pages/verifications/VerificationsPage'
 import { VerificationFormPage } from '@/pages/verifications/VerificationFormPage'
 import { VerificationDetailPage } from '@/pages/verifications/VerificationDetailPage'
+import { ResultReportPage } from '@/pages/reports/ResultReportPage'
+import { BalanceReportPage } from '@/pages/reports/BalanceReportPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -22,6 +24,8 @@ export const router = createBrowserRouter([
           { path: 'verifikationer/ny', element: <VerificationFormPage /> },
           { path: 'verifikationer/:id', element: <VerificationDetailPage /> },
           { path: 'verifikationer/:id/redigera', element: <VerificationFormPage /> },
+          { path: 'rapporter/resultat', element: <ResultReportPage /> },
+          { path: 'rapporter/balans', element: <BalanceReportPage /> },
           { path: 'kontoplan', element: <AccountsPage /> },
           { path: 'rakenskapsar', element: <FiscalYearsPage /> },
         ],

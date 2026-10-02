@@ -9,6 +9,7 @@ import authRouter from './modules/auth/auth.router'
 import accountsRouter from './modules/accounts/accounts.router'
 import fiscalYearsRouter from './modules/fiscalYears/fiscalYears.router'
 import verificationsRouter from './modules/verifications/verifications.router'
+import reportsRouter from './modules/reports/reports.router'
 
 const app = express()
 
@@ -25,6 +26,7 @@ app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/accounts', accountsRouter)
 app.use('/api/v1/fiscal-years', fiscalYearsRouter)
 app.use('/api/v1/verifications', verificationsRouter)
+app.use('/api/v1/reports', reportsRouter)
 
 app.use(errorHandler)
 
