@@ -10,10 +10,11 @@ anställda – tänk "Fortnox light". Fristående app, byggd med samma stack som
 - 📈 **Resultatrapport** – intäkter minus kostnader för räkenskapsåret
 - ⚖️ **Balansrapport** – tillgångar samt eget kapital och skulder, med differenskontroll
 - 🧮 **Momsrapport** – utgående minus ingående moms (kontantmetoden), underlag för deklarationen
+- 📑 **Förenklat årsbokslut (K1)** – förenklad resultat- och balansräkning samt underlag till
+  NE-bilagan (R- och B-fält), med möjlighet att låsa räkenskapsåret (bokslut)
 - 📅 **Räkenskapsår** – kalenderår, kan låsas (bokslut)
 
-**Planerat (kommande faser):** huvudbok, förenklat årsbokslut med NE-underlag,
-SIE4-export/import, kvittouppladdning.
+**Planerat (kommande faser):** huvudbok, SIE4-export/import, kvittouppladdning.
 
 ## Teknik
 

@@ -173,3 +173,88 @@ export async function getVatReport(q: ReportQuery) {
     netVat,
   }
 }
+
+// ─── FÖRENKLAT ÅRSBOKSLUT (K1) + NE-UNDERLAG ─────────────────────────────────
+
+type AccountSum = { account: { id: string; number: number; name: string; type: string }; debit: number; credit: number }
+
+export interface NeField {
+  code: string
+  label: string
+  amount: number
+}
+
+// Summera ett kontonummerintervall. riktning 'debit' = debet − kredit, 'credit' = kredit − debet.
+function sumRange(sums: AccountSum[], lo: number, hi: number, direction: 'debit' | 'credit'): number {
+  return round2(
+    sums
+      .filter((s) => s.account.number >= lo && s.account.number <= hi)
+      .reduce((a, s) => a + (direction === 'debit' ? s.debit - s.credit : s.credit - s.debit), 0)
+  )
+}
+
+export async function getYearEndReport(q: ReportQuery) {
+  const { fy, where } = await buildRowFilter(q)
+  const sums = await sumsByAccount(where)
+
+  // Förenklad resultaträkning, grupperad enligt NE-blankettens logik.
+  const momspliktigIntakter = sumRange(sums, 3000, 3799, 'credit')
+  const ovrigaIntakter = sumRange(sums, 3800, 3999, 'credit')
+  const finansiellaIntakter = sumRange(sums, 8300, 8399, 'credit')
+  const varukostnader = sumRange(sums, 4000, 4999, 'debit')
+  const ovrigaExternaKostnader = sumRange(sums, 5000, 6999, 'debit')
+  const personalkostnader = sumRange(sums, 7000, 7699, 'debit')
+  const finansiellaKostnader = sumRange(sums, 8400, 8499, 'debit')
+
+  const totalaIntakter = round2(momspliktigIntakter + ovrigaIntakter + finansiellaIntakter)
+  const totalaKostnader = round2(varukostnader + ovrigaExternaKostnader + personalkostnader + finansiellaKostnader)
+  const aretsResultat = round2(totalaIntakter - totalaKostnader)
+
+  const result = {
+    momspliktigIntakter,
+    ovrigaIntakter,
+    finansiellaIntakter,
+    varukostnader,
+    ovrigaExternaKostnader,
+    personalkostnader,
+    finansiellaKostnader,
+    totalaIntakter,
+    totalaKostnader,
+    aretsResultat,
+  }
+
+  // Balansräkning vid årets slut (återanvänder balansrapporten).
+  const balance = await getBalanceReport(q)
+
+  // NE-bilagans R-fält (resultat).
+  const r: NeField[] = [
+    { code: 'R1', label: 'Försäljning och utfört arbete samt övriga momspliktiga intäkter', amount: momspliktigIntakter },
+    { code: 'R2', label: 'Momsfria intäkter', amount: ovrigaIntakter },
+    { code: 'R4', label: 'Ränteintäkter m.m.', amount: finansiellaIntakter },
+    { code: 'R5', label: 'Varor, material och tjänster', amount: varukostnader },
+    { code: 'R6', label: 'Övriga externa kostnader', amount: ovrigaExternaKostnader },
+    { code: 'R7', label: 'Anställd personal', amount: personalkostnader },
+    { code: 'R8', label: 'Räntekostnader m.m.', amount: finansiellaKostnader },
+    { code: aretsResultat >= 0 ? 'R11' : 'R12', label: aretsResultat >= 0 ? 'Bokfört resultat (vinst)' : 'Bokfört resultat (förlust)', amount: Math.abs(aretsResultat) },
+  ]
+
+  // NE-bilagans B-fält (balans vid årets slut).
+  const b: NeField[] = [
+    { code: 'B4', label: 'Maskiner och inventarier', amount: sumRange(sums, 1200, 1299, 'debit') },
+    { code: 'B6', label: 'Varulager', amount: sumRange(sums, 1400, 1499, 'debit') },
+    { code: 'B7', label: 'Kundfordringar', amount: sumRange(sums, 1500, 1599, 'debit') },
+    { code: 'B8', label: 'Övriga fordringar', amount: sumRange(sums, 1600, 1799, 'debit') },
+    { code: 'B9', label: 'Kassa och bank', amount: sumRange(sums, 1900, 1999, 'debit') },
+    { code: 'B10', label: 'Eget kapital', amount: sumRange(sums, 2010, 2099, 'credit') },
+    { code: 'B13', label: 'Låneskulder', amount: sumRange(sums, 2300, 2399, 'credit') },
+    { code: 'B15', label: 'Leverantörsskulder', amount: sumRange(sums, 2440, 2449, 'credit') },
+    { code: 'B16', label: 'Övriga skulder (inkl. moms)', amount: sumRange(sums, 2600, 2999, 'credit') },
+  ]
+
+  return {
+    fiscalYear: { id: fy.id, label: fy.label, isClosed: fy.isClosed },
+    result,
+    balance,
+    ne: { r, b },
+  }
+}

@@ -26,3 +26,16 @@ export function useCreateFiscalYear() {
     onError: () => toast.error('Kunde inte skapa räkenskapsår'),
   })
 }
+
+export function useSetFiscalYearClosed() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, close }: { id: string; close: boolean }) =>
+      api.post<{ success: boolean; data: FiscalYear }>(`/fiscal-years/${id}/${close ? 'close' : 'reopen'}`).then((r) => r.data.data),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: fiscalYearKeys.all })
+      toast.success(vars.close ? 'Bokslut klart – räkenskapsåret är låst' : 'Räkenskapsåret är öppnat igen')
+    },
+    onError: () => toast.error('Kunde inte ändra räkenskapsårets status'),
+  })
+}

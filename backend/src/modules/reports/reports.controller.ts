@@ -35,3 +35,12 @@ export async function vatHandler(req: Request, res: Response, next: NextFunction
     mapError(err, res, next)
   }
 }
+
+export async function yearEndHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await svc.getYearEndReport(req.query as any)
+    res.json({ success: true, data })
+  } catch (err: any) {
+    mapError(err, res, next)
+  }
+}
