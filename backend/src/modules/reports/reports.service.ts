@@ -133,3 +133,43 @@ export async function getBalanceReport(q: ReportQuery) {
     diff: round2(totalAssets - totalEquityAndLiabilities),
   }
 }
+
+// Momsrapport (kontantmetoden): utgående moms (2610–2639), ingående moms (2640–2649)
+// och momspliktig försäljning (3000–3799) för perioden. Netto = utgående − ingående.
+export async function getVatReport(q: ReportQuery) {
+  const { fy, where } = await buildRowFilter(q)
+  const sums = await sumsByAccount(where)
+
+  const outputVat: ReportLine[] = [] // utgående moms (kredit − debet)
+  const inputVat: ReportLine[] = [] // ingående moms (debet − kredit)
+  let salesBase = 0 // momspliktig försäljning, netto exkl. moms
+
+  for (const s of sums) {
+    const n = s.account.number
+    if (n >= 2610 && n <= 2639) {
+      const amount = round2(s.credit - s.debit)
+      if (amount !== 0) outputVat.push({ accountId: s.account.id, number: n, name: s.account.name, amount })
+    } else if (n >= 2640 && n <= 2649) {
+      const amount = round2(s.debit - s.credit)
+      if (amount !== 0) inputVat.push({ accountId: s.account.id, number: n, name: s.account.name, amount })
+    }
+    if (s.account.type === 'INTAKT' && n >= 3000 && n <= 3799) {
+      salesBase += s.credit - s.debit
+    }
+  }
+
+  const totalOutputVat = round2(outputVat.reduce((a, l) => a + l.amount, 0))
+  const totalInputVat = round2(inputVat.reduce((a, l) => a + l.amount, 0))
+  const netVat = round2(totalOutputVat - totalInputVat)
+
+  return {
+    fiscalYear: { id: fy.id, label: fy.label },
+    salesBase: round2(salesBase),
+    outputVat,
+    inputVat,
+    totalOutputVat,
+    totalInputVat,
+    // Positivt = moms att betala till Skatteverket, negativt = moms att få tillbaka.
+    netVat,
+  }
+}

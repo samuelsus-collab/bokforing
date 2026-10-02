@@ -3,14 +3,17 @@
 En avskalad bokföringsapp för **enskild firma** som bokför enligt **kontantmetoden** och saknar
 anställda – tänk "Fortnox light". Fristående app, byggd med samma stack som Millform.
 
-**MVP (denna version):**
+**Funktioner:**
 - 📒 **Kontoplan** – BAS-baserad, avskalad kontoplan (svenska konton)
 - 🧾 **Verifikationer** – dubbel bokföring med automatisk balanskontroll (debet = kredit) och
   obruten verifikationsserie per räkenskapsår
+- 📈 **Resultatrapport** – intäkter minus kostnader för räkenskapsåret
+- ⚖️ **Balansrapport** – tillgångar samt eget kapital och skulder, med differenskontroll
+- 🧮 **Momsrapport** – utgående minus ingående moms (kontantmetoden), underlag för deklarationen
 - 📅 **Räkenskapsår** – kalenderår, kan låsas (bokslut)
 
-**Planerat (kommande faser):** resultat-/balansrapport + huvudbok, momsrapport (kontantmetoden),
-förenklat årsbokslut med NE-underlag, SIE4-export/import, kvittouppladdning.
+**Planerat (kommande faser):** huvudbok, förenklat årsbokslut med NE-underlag,
+SIE4-export/import, kvittouppladdning.
 
 ## Teknik
 

@@ -27,10 +27,21 @@ export interface BalanceReport {
   diff: number
 }
 
+export interface VatReport {
+  fiscalYear: { id: string; label: string }
+  salesBase: number
+  outputVat: ReportLine[]
+  inputVat: ReportLine[]
+  totalOutputVat: number
+  totalInputVat: number
+  netVat: number
+}
+
 export const reportKeys = {
   all: ['reports'] as const,
   result: (params: object) => [...reportKeys.all, 'result', params] as const,
   balance: (params: object) => [...reportKeys.all, 'balance', params] as const,
+  vat: (params: object) => [...reportKeys.all, 'vat', params] as const,
 }
 
 interface Params {
@@ -51,6 +62,14 @@ export function useBalanceReport(params: Params) {
   return useQuery({
     queryKey: reportKeys.balance(params),
     queryFn: () => api.get<{ success: boolean; data: BalanceReport }>('/reports/balance', { params }).then((r) => r.data.data),
+    enabled: !!params.fiscalYearId,
+  })
+}
+
+export function useVatReport(params: Params) {
+  return useQuery({
+    queryKey: reportKeys.vat(params),
+    queryFn: () => api.get<{ success: boolean; data: VatReport }>('/reports/vat', { params }).then((r) => r.data.data),
     enabled: !!params.fiscalYearId,
   })
 }

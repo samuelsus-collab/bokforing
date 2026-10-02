@@ -9,5 +9,6 @@ router.use(authenticate)
 
 router.get('/result', validate(reportQuerySchema, 'query'), ctrl.resultHandler)
 router.get('/balance', validate(reportQuerySchema, 'query'), ctrl.balanceHandler)
+router.get('/vat', validate(reportQuerySchema, 'query'), ctrl.vatHandler)
 
 export default router

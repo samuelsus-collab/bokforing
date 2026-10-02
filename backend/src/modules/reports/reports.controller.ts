@@ -26,3 +26,12 @@ export async function balanceHandler(req: Request, res: Response, next: NextFunc
     mapError(err, res, next)
   }
 }
+
+export async function vatHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await svc.getVatReport(req.query as any)
+    res.json({ success: true, data })
+  } catch (err: any) {
+    mapError(err, res, next)
+  }
+}
