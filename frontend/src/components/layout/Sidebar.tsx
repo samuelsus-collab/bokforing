@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { BookOpen, ListTree, ScrollText, CalendarRange, TrendingUp, Scale, Percent, FileCheck } from 'lucide-react'
+import { BookOpen, ListTree, ScrollText, CalendarRange, TrendingUp, Scale, Percent, FileCheck, ArrowLeftRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const items = [
@@ -8,6 +8,7 @@ const items = [
   { label: 'Balansrapport', to: '/rapporter/balans', icon: Scale },
   { label: 'Momsrapport', to: '/rapporter/moms', icon: Percent },
   { label: 'Årsbokslut', to: '/arsbokslut', icon: FileCheck },
+  { label: 'SIE import/export', to: '/sie', icon: ArrowLeftRight },
   { label: 'Kontoplan', to: '/kontoplan', icon: ListTree },
   { label: 'Räkenskapsår', to: '/rakenskapsar', icon: CalendarRange },
 ]

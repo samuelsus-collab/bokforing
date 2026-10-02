@@ -18,20 +18,21 @@ async function buildRowFilter(q: ReportQuery) {
   const fy = await prisma.fiscalYear.findUnique({ where: { id: q.fiscalYearId } })
   if (!fy) throw new Error('FISCAL_YEAR_NOT_FOUND')
 
-  const dateFilter: Prisma.DateTimeFilter = {}
-  // Begränsa alltid inom räkenskapsåret; snäva in med from/to om angivet.
-  dateFilter.gte = q.from ? new Date(q.from) : fy.startDate
-  if (q.to) {
-    const to = new Date(q.to)
-    to.setDate(to.getDate() + 1)
-    dateFilter.lt = to
-  } else {
-    const end = new Date(fy.endDate)
-    end.setDate(end.getDate() + 1)
-    dateFilter.lt = end
+  // Rapporten omfattar hela räkenskapsåret (alla verifikationer kopplade till det).
+  // from/to används bara för att snäva in perioden när det uttryckligen anges.
+  const verWhere: Prisma.VerificationWhereInput = { fiscalYearId: q.fiscalYearId }
+  if (q.from || q.to) {
+    const dateFilter: Prisma.DateTimeFilter = {}
+    if (q.from) dateFilter.gte = new Date(q.from)
+    if (q.to) {
+      const to = new Date(q.to)
+      to.setDate(to.getDate() + 1)
+      dateFilter.lt = to
+    }
+    verWhere.date = dateFilter
   }
 
-  return { fy, where: { verification: { fiscalYearId: q.fiscalYearId, date: dateFilter } } }
+  return { fy, where: { verification: verWhere } }
 }
 
 // Summera debet/kredit per konto för perioden.

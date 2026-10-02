@@ -10,6 +10,7 @@ import accountsRouter from './modules/accounts/accounts.router'
 import fiscalYearsRouter from './modules/fiscalYears/fiscalYears.router'
 import verificationsRouter from './modules/verifications/verifications.router'
 import reportsRouter from './modules/reports/reports.router'
+import sieRouter from './modules/sie/sie.router'
 
 const app = express()
 
@@ -27,6 +28,7 @@ app.use('/api/v1/accounts', accountsRouter)
 app.use('/api/v1/fiscal-years', fiscalYearsRouter)
 app.use('/api/v1/verifications', verificationsRouter)
 app.use('/api/v1/reports', reportsRouter)
+app.use('/api/v1/sie', sieRouter)
 
 app.use(errorHandler)
 

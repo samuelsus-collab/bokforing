@@ -12,9 +12,19 @@ anställda – tänk "Fortnox light". Fristående app, byggd med samma stack som
 - 🧮 **Momsrapport** – utgående minus ingående moms (kontantmetoden), underlag för deklarationen
 - 📑 **Förenklat årsbokslut (K1)** – förenklad resultat- och balansräkning samt underlag till
   NE-bilagan (R- och B-fält), med möjlighet att låsa räkenskapsåret (bokslut)
+- 🔄 **SIE4 import/export** – flytta in befintlig bokföring från annat program (konton,
+  verifikationer med originaldatum, ingående balanser) och exportera ett räkenskapsår
 - 📅 **Räkenskapsår** – kalenderår, kan låsas (bokslut)
 
-**Planerat (kommande faser):** huvudbok, SIE4-export/import, kvittouppladdning.
+**Planerat (kommande faser):** huvudbok, kvittouppladdning.
+
+### SIE4-import – bra att veta
+- Hanterar både UTF-8 och PC8/CP437-kodade filer.
+- Konton skapas automatiskt om de saknas (typ härleds från BAS-kontonummer).
+- Verifikationer behåller sina **datum** men får nya löpnummer i en obruten serie.
+- Ingående balanser (`#IB`) läggs in som en separat verifikation vid årets början.
+- Importera helst till ett **tomt räkenskapsår** för att undvika dubbletter.
+- Objekt/dimensioner och budgetposter i filen ignoreras. Exporten är UTF-8-kodad.
 
 ## Teknik
 

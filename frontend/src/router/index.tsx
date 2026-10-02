@@ -11,6 +11,7 @@ import { ResultReportPage } from '@/pages/reports/ResultReportPage'
 import { BalanceReportPage } from '@/pages/reports/BalanceReportPage'
 import { VatReportPage } from '@/pages/reports/VatReportPage'
 import { YearEndPage } from '@/pages/reports/YearEndPage'
+import { SiePage } from '@/pages/sie/SiePage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
           { path: 'rapporter/balans', element: <BalanceReportPage /> },
           { path: 'rapporter/moms', element: <VatReportPage /> },
           { path: 'arsbokslut', element: <YearEndPage /> },
+          { path: 'sie', element: <SiePage /> },
           { path: 'kontoplan', element: <AccountsPage /> },
           { path: 'rakenskapsar', element: <FiscalYearsPage /> },
         ],
