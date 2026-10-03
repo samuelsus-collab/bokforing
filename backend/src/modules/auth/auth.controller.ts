@@ -26,3 +26,20 @@ export async function meHandler(req: Request, res: Response, next: NextFunction)
     next(err)
   }
 }
+
+export async function changePasswordHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    await svc.changePassword(req.user!.userId, req.body)
+    res.json({ success: true })
+  } catch (err: any) {
+    if (err.message === 'WRONG_PASSWORD') {
+      res.status(400).json({ success: false, error: { code: 'WRONG_PASSWORD', message: 'Fel nuvarande lösenord' } })
+      return
+    }
+    if (err.message === 'NOT_FOUND') {
+      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Användare hittades inte' } })
+      return
+    }
+    next(err)
+  }
+}

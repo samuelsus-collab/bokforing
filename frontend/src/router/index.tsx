@@ -13,6 +13,7 @@ import { VatReportPage } from '@/pages/reports/VatReportPage'
 import { LedgerPage } from '@/pages/reports/LedgerPage'
 import { YearEndPage } from '@/pages/reports/YearEndPage'
 import { SiePage } from '@/pages/sie/SiePage'
+import { SettingsPage } from '@/pages/settings/SettingsPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: 'sie', element: <SiePage /> },
           { path: 'kontoplan', element: <AccountsPage /> },
           { path: 'rakenskapsar', element: <FiscalYearsPage /> },
+          { path: 'installningar', element: <SettingsPage /> },
         ],
       },
     ],
