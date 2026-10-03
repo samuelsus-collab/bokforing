@@ -57,3 +57,12 @@ export async function ledgerHandler(req: Request, res: Response, next: NextFunct
     mapError(err, res, next)
   }
 }
+
+export async function dashboardHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await svc.getDashboard(req.query as any)
+    res.json({ success: true, data })
+  } catch (err: any) {
+    mapError(err, res, next)
+  }
+}

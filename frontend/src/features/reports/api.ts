@@ -86,6 +86,26 @@ export interface LedgerReport {
   closingBalance: number
 }
 
+export interface DashboardMonth {
+  month: number
+  label: string
+  income: number
+  expenses: number
+  result: number
+}
+
+export interface Dashboard {
+  fiscalYear: { id: string; label: string; isClosed: boolean }
+  income: number
+  expenses: number
+  result: number
+  liquidity: number
+  netVat: number
+  hasVatDeviation: boolean
+  verificationCount: number
+  months: DashboardMonth[]
+}
+
 export const reportKeys = {
   all: ['reports'] as const,
   result: (params: object) => [...reportKeys.all, 'result', params] as const,
@@ -93,6 +113,7 @@ export const reportKeys = {
   vat: (params: object) => [...reportKeys.all, 'vat', params] as const,
   yearEnd: (params: object) => [...reportKeys.all, 'year-end', params] as const,
   ledger: (params: object) => [...reportKeys.all, 'ledger', params] as const,
+  dashboard: (params: object) => [...reportKeys.all, 'dashboard', params] as const,
 }
 
 interface Params {
@@ -138,5 +159,13 @@ export function useLedgerReport(params: { fiscalYearId?: string; accountId?: str
     queryKey: reportKeys.ledger(params),
     queryFn: () => api.get<{ success: boolean; data: LedgerReport }>('/reports/ledger', { params }).then((r) => r.data.data),
     enabled: !!params.fiscalYearId && !!params.accountId,
+  })
+}
+
+export function useDashboard(params: { fiscalYearId?: string }) {
+  return useQuery({
+    queryKey: reportKeys.dashboard(params),
+    queryFn: () => api.get<{ success: boolean; data: Dashboard }>('/reports/dashboard', { params }).then((r) => r.data.data),
+    enabled: !!params.fiscalYearId,
   })
 }

@@ -14,6 +14,7 @@ import { LedgerPage } from '@/pages/reports/LedgerPage'
 import { YearEndPage } from '@/pages/reports/YearEndPage'
 import { SiePage } from '@/pages/sie/SiePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -24,7 +25,8 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <Navigate to="/verifikationer" replace /> },
+          { index: true, element: <Navigate to="/oversikt" replace /> },
+          { path: 'oversikt', element: <DashboardPage /> },
           { path: 'verifikationer', element: <VerificationsPage /> },
           { path: 'verifikationer/ny', element: <VerificationFormPage /> },
           { path: 'verifikationer/:id', element: <VerificationDetailPage /> },
