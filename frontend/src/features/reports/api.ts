@@ -35,6 +35,9 @@ export interface VatReport {
   totalOutputVat: number
   totalInputVat: number
   netVat: number
+  expectedOutputVat: number
+  outputVatDeviation: number
+  hasDeviation: boolean
 }
 
 export interface NeField {

@@ -14,7 +14,7 @@ export interface NeField {
 }
 
 export type AccountSum = {
-  account: { id: string; number: number; name: string; type: string }
+  account: { id: string; number: number; name: string; type: string; vatRate?: number | null }
   debit: number
   credit: number
 }
@@ -90,11 +90,17 @@ export function computeBalance(sums: AccountSum[]) {
   }
 }
 
-// Momsrapport (kontantmetoden).
+// Momsrapport (kontantmetoden) med momskontroll (avvikelse mot förväntad moms).
+// Avvikelser > denna gräns (kr) flaggas.
+const VAT_DEVIATION_TOLERANCE = 1
+
 export function computeVat(sums: AccountSum[]) {
   const outputVat: ReportLine[] = []
   const inputVat: ReportLine[] = []
   let salesBase = 0
+  // Förväntad utgående moms = summa (momspliktig försäljning × kontots momssats).
+  let expectedOutputVat = 0
+
   for (const s of sums) {
     const n = s.account.number
     if (n >= 2610 && n <= 2639) {
@@ -104,10 +110,20 @@ export function computeVat(sums: AccountSum[]) {
       const amount = round2(s.debit - s.credit)
       if (amount !== 0) inputVat.push(line(s, amount))
     }
-    if (s.account.type === 'INTAKT' && n >= 3000 && n <= 3799) salesBase += s.credit - s.debit
+    if (s.account.type === 'INTAKT' && n >= 3000 && n <= 3799) {
+      const net = s.credit - s.debit
+      salesBase += net
+      if (s.account.vatRate) expectedOutputVat += net * (Number(s.account.vatRate) / 100)
+    }
   }
+
   const totalOutputVat = round2(outputVat.reduce((a, l) => a + l.amount, 0))
   const totalInputVat = round2(inputVat.reduce((a, l) => a + l.amount, 0))
+  expectedOutputVat = round2(expectedOutputVat)
+  // Avvikelse: bokförd utgående moms minus förväntad (baserat på försäljningen).
+  const outputVatDeviation = round2(totalOutputVat - expectedOutputVat)
+  const hasDeviation = Math.abs(outputVatDeviation) > VAT_DEVIATION_TOLERANCE
+
   return {
     salesBase: round2(salesBase),
     outputVat,
@@ -115,6 +131,9 @@ export function computeVat(sums: AccountSum[]) {
     totalOutputVat,
     totalInputVat,
     netVat: round2(totalOutputVat - totalInputVat),
+    expectedOutputVat,
+    outputVatDeviation,
+    hasDeviation,
   }
 }
 
