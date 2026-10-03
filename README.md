@@ -36,33 +36,40 @@ anställda – tänk "Fortnox light". Fristående app, byggd med samma stack som
 
 ## Kom igång
 
+> Tips: macOS-terminalen (zsh) tolkar inte `#` som kommentar när du klistrar in.
+> Klistra därför in kommandona nedan **utan** kommentarer, ett block i taget.
+
 ### 1. Miljövariabler
+Två filer behövs: `.env` i roten (för docker-compose) och `backend/.env` (för backend + Prisma).
 ```bash
-cp .env.example .env          # roten – används av docker-compose
-# skapa även backend/.env (se .env.example för nycklar):
-#   DATABASE_URL, JWT_SECRET, PORT=3101, FRONTEND_URL=http://localhost:5273
+cp .env.example .env
+cp backend/.env.example backend/.env
 ```
+Sätt sedan egna värden för `POSTGRES_PASSWORD` och `JWT_SECRET`, och se till att lösenordet i
+`backend/.env` (`DATABASE_URL`) matchar `POSTGRES_PASSWORD` i roten.
 
 ### 2. Databas
 ```bash
-docker compose up -d postgres           # startar PostgreSQL på :5432
+docker compose up -d postgres
 ```
 
 ### 3. Backend
 ```bash
 cd backend
 npm install
-npm run db:migrate                      # skapar tabeller
-npm run db:seed                         # kontoplan + räkenskapsår + första användaren
-npm run dev                             # http://localhost:3101
+npm run db:migrate
+npm run db:seed
+npm run dev
 ```
 
 ### 4. Frontend
+Öppna ett nytt terminalfönster:
 ```bash
 cd frontend
 npm install
-npm run dev                             # http://localhost:5273 (proxar /api → :3101)
+npm run dev
 ```
+Appen körs på http://localhost:5273 (proxar `/api` → `:3101`).
 
 ### Inloggning (från seed)
 Standard: `admin@firma.se` / `bokfor123` (kan ändras via `SEED_USER_*` i `backend/.env`).

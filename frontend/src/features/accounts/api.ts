@@ -36,10 +36,26 @@ export function useCreateAccount() {
   })
 }
 
+type AccountPatch = Partial<{ name: string; type: AccountType; vatRate: number | null; sruCode: string | null; isActive: boolean }>
+
 export function useUpdateAccount(id: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<{ name: string; type: AccountType; vatRate: number | null; sruCode: string | null; isActive: boolean }>) =>
+    mutationFn: (data: AccountPatch) =>
+      api.patch<{ success: boolean; data: Account }>(`/accounts/${id}`, data).then((r) => r.data.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: accountKeys.all })
+      toast.success('Konto uppdaterat')
+    },
+    onError: () => toast.error('Kunde inte uppdatera konto'),
+  })
+}
+
+// Uppdatera valfritt konto (id i payloaden) – praktiskt för åtgärder per rad.
+export function useUpdateAccountById() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: AccountPatch }) =>
       api.patch<{ success: boolean; data: Account }>(`/accounts/${id}`, data).then((r) => r.data.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: accountKeys.all })
