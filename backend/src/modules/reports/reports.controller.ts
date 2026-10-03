@@ -6,6 +6,10 @@ function mapError(err: any, res: Response, next: NextFunction) {
     res.status(400).json({ success: false, error: { code: 'FISCAL_YEAR_NOT_FOUND', message: 'Räkenskapsåret finns inte' } })
     return
   }
+  if (err.message === 'ACCOUNT_NOT_FOUND') {
+    res.status(400).json({ success: false, error: { code: 'ACCOUNT_NOT_FOUND', message: 'Kontot finns inte' } })
+    return
+  }
   next(err)
 }
 
@@ -39,6 +43,15 @@ export async function vatHandler(req: Request, res: Response, next: NextFunction
 export async function yearEndHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await svc.getYearEndReport(req.query as any)
+    res.json({ success: true, data })
+  } catch (err: any) {
+    mapError(err, res, next)
+  }
+}
+
+export async function ledgerHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await svc.getLedgerReport(req.query as any)
     res.json({ success: true, data })
   } catch (err: any) {
     mapError(err, res, next)

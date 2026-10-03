@@ -7,6 +7,7 @@ anställda – tänk "Fortnox light". Fristående app, byggd med samma stack som
 - 📒 **Kontoplan** – BAS-baserad, avskalad kontoplan (svenska konton)
 - 🧾 **Verifikationer** – dubbel bokföring med automatisk balanskontroll (debet = kredit) och
   obruten verifikationsserie per räkenskapsår
+- 📚 **Huvudbok** – alla transaktioner per konto med löpande saldo
 - 📈 **Resultatrapport** – intäkter minus kostnader för räkenskapsåret
 - ⚖️ **Balansrapport** – tillgångar samt eget kapital och skulder, med differenskontroll
 - 🧮 **Momsrapport** – utgående minus ingående moms (kontantmetoden), underlag för deklarationen
@@ -16,7 +17,7 @@ anställda – tänk "Fortnox light". Fristående app, byggd med samma stack som
   verifikationer med originaldatum, ingående balanser) och exportera ett räkenskapsår
 - 📅 **Räkenskapsår** – kalenderår, kan låsas (bokslut)
 
-**Planerat (kommande faser):** huvudbok, kvittouppladdning.
+**Planerat (kommande faser):** kvittouppladdning.
 
 ### SIE4-import – bra att veta
 - Hanterar både UTF-8 och PC8/CP437-kodade filer.
