@@ -1,0 +1,47 @@
+# Produktionsstack: postgres + backend + frontend (nginx).
+# Endast frontend (port 80) exponeras utåt. Kräns att .env i roten är ifylld
+# (POSTGRES_* och JWT_SECRET). Starta med:
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bokforing}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?sätt POSTGRES_PASSWORD i .env}
+      POSTGRES_DB: ${POSTGRES_DB:-bokforing}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-bokforing}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bokforing}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bokforing}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?sätt JWT_SECRET i .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      NODE_ENV: production
+      PORT: 3101
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      SEED_USER_EMAIL: ${SEED_USER_EMAIL:-admin@firma.se}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-bokfor123}
+      SEED_COMPANY_NAME: ${SEED_COMPANY_NAME:-Min Enskilda Firma}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
