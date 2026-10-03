@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus, Trash2, ArrowLeft } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -41,6 +41,16 @@ export function VerificationFormPage() {
   const [date, setDate] = useState('')
   const [description, setDescription] = useState('')
   const [rows, setRows] = useState<EditableRow[]>([emptyRow(), emptyRow()])
+
+  // Referenser till konto-fälten för tangentbordsnavigering (Tab lägger till ny rad).
+  const kontoRefs = useRef<Record<number, HTMLInputElement | null>>({})
+  const [focusRow, setFocusRow] = useState<number | null>(null)
+  useEffect(() => {
+    if (focusRow != null) {
+      kontoRefs.current[focusRow]?.focus()
+      setFocusRow(null)
+    }
+  }, [focusRow, rows])
 
   // Uppslag kontonummer -> konto.
   const accountByNumber = useMemo(() => {
@@ -200,6 +210,9 @@ export function VerificationFormPage() {
                 <tr key={i}>
                   <td className="px-3 py-2 align-top">
                     <input
+                      ref={(el) => {
+                        kontoRefs.current[i] = el
+                      }}
                       className={cn('input', unknown && 'border-red-400')}
                       list="konto-list"
                       inputMode="numeric"
@@ -234,10 +247,24 @@ export function VerificationFormPage() {
                       min="0"
                       value={r.credit}
                       onChange={(e) => updateRow(i, { credit: e.target.value, debit: e.target.value ? '' : r.debit })}
+                      onKeyDown={(e) => {
+                        // Tab ut ur sista radens kredit-fält skapar en ny rad och flyttar fokus dit.
+                        if (e.key === 'Tab' && !e.shiftKey && i === rows.length - 1) {
+                          e.preventDefault()
+                          addRow()
+                          setFocusRow(rows.length)
+                        }
+                      }}
                     />
                   </td>
                   <td className="px-3 py-2 text-right align-top">
-                    <button className="btn-ghost" onClick={() => removeRow(i)} disabled={rows.length <= 2} title="Ta bort rad">
+                    <button
+                      className="btn-ghost"
+                      tabIndex={-1}
+                      onClick={() => removeRow(i)}
+                      disabled={rows.length <= 2}
+                      title="Ta bort rad"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </td>
