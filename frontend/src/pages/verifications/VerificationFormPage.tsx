@@ -11,15 +11,16 @@ import {
   useVerification,
 } from '@/features/verifications/api'
 import { formatSEK, cn } from '@/lib/utils'
+import type { Account } from '@/types/bokforing'
 
 interface EditableRow {
-  accountId: string
+  accountNo: string // kontonummer som text (t.ex. "1930")
   debit: string
   credit: string
   description: string
 }
 
-const emptyRow = (): EditableRow => ({ accountId: '', debit: '', credit: '', description: '' })
+const emptyRow = (): EditableRow => ({ accountNo: '', debit: '', credit: '', description: '' })
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -28,7 +29,8 @@ export function VerificationFormPage() {
   const isEdit = !!id
   const navigate = useNavigate()
 
-  const { data: accounts } = useAccounts({ isActive: true })
+  // Alla konton (även inaktiva) för uppslag; endast aktiva i förslagslistan.
+  const { data: accounts } = useAccounts({})
   const { data: years } = useFiscalYears()
   const { data: existing, isLoading: loadingExisting } = useVerification(id ?? '')
 
@@ -39,6 +41,18 @@ export function VerificationFormPage() {
   const [date, setDate] = useState('')
   const [description, setDescription] = useState('')
   const [rows, setRows] = useState<EditableRow[]>([emptyRow(), emptyRow()])
+
+  // Uppslag kontonummer -> konto.
+  const accountByNumber = useMemo(() => {
+    const m = new Map<number, Account>()
+    accounts?.forEach((a) => m.set(a.number, a))
+    return m
+  }, [accounts])
+  const resolve = (accountNo: string): Account | undefined => {
+    const n = parseInt(String(accountNo).trim(), 10)
+    return Number.isNaN(n) ? undefined : accountByNumber.get(n)
+  }
+  const activeAccounts = useMemo(() => accounts?.filter((a) => a.isActive) ?? [], [accounts])
 
   // Förvälj öppet räkenskapsår + dagens datum för nya verifikationer.
   useEffect(() => {
@@ -57,7 +71,7 @@ export function VerificationFormPage() {
       setDescription(existing.description)
       setRows(
         existing.rows.map((r) => ({
-          accountId: r.account.id,
+          accountNo: String(r.account.number),
           debit: parseFloat(r.debit) ? String(parseFloat(r.debit)) : '',
           credit: parseFloat(r.credit) ? String(parseFloat(r.credit)) : '',
           description: r.description ?? '',
@@ -73,12 +87,14 @@ export function VerificationFormPage() {
   }, [rows])
 
   const rowsValid = rows.every((r) => {
-    if (!r.accountId && !r.debit && !r.credit) return true // tom rad ignoreras
+    if (!r.accountNo && !r.debit && !r.credit) return true // tom rad ignoreras
     const d = parseFloat(r.debit) || 0
     const c = parseFloat(r.credit) || 0
-    return r.accountId && (d > 0) !== (c > 0)
+    return !!resolve(r.accountNo) && (d > 0) !== (c > 0)
   })
-  const filledRows = rows.filter((r) => r.accountId && ((parseFloat(r.debit) || 0) > 0 || (parseFloat(r.credit) || 0) > 0))
+  const filledRows = rows.filter(
+    (r) => resolve(r.accountNo) && ((parseFloat(r.debit) || 0) > 0 || (parseFloat(r.credit) || 0) > 0)
+  )
   const canSave =
     !!fiscalYearId &&
     !!date &&
@@ -96,7 +112,7 @@ export function VerificationFormPage() {
 
   const onSubmit = async () => {
     const payloadRows = filledRows.map((r) => ({
-      accountId: r.accountId,
+      accountId: resolve(r.accountNo)!.id,
       debit: parseFloat(r.debit) || 0,
       credit: parseFloat(r.credit) || 0,
       description: r.description || undefined,
@@ -127,6 +143,15 @@ export function VerificationFormPage() {
           </button>
         }
       />
+
+      {/* Förslagslista för kontonummer (autocomplete). */}
+      <datalist id="konto-list">
+        {activeAccounts.map((a) => (
+          <option key={a.id} value={a.number}>
+            {a.number} · {a.name}
+          </option>
+        ))}
+      </datalist>
 
       {closed && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
@@ -160,7 +185,7 @@ export function VerificationFormPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-surface-border bg-gray-50 text-left text-xs uppercase text-gray-500">
             <tr>
-              <th className="px-3 py-2">Konto</th>
+              <th className="w-56 px-3 py-2">Konto</th>
               <th className="px-3 py-2">Beskrivning</th>
               <th className="px-3 py-2 text-right">Debet</th>
               <th className="px-3 py-2 text-right">Kredit</th>
@@ -168,48 +193,57 @@ export function VerificationFormPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-border">
-            {rows.map((r, i) => (
-              <tr key={i}>
-                <td className="px-3 py-2">
-                  <select className="input" value={r.accountId} onChange={(e) => updateRow(i, { accountId: e.target.value })}>
-                    <option value="">Välj konto…</option>
-                    {accounts?.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.number} · {a.name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-3 py-2">
-                  <input className="input" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    className="input text-right"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={r.debit}
-                    onChange={(e) => updateRow(i, { debit: e.target.value, credit: e.target.value ? '' : r.credit })}
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    className="input text-right"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={r.credit}
-                    onChange={(e) => updateRow(i, { credit: e.target.value, debit: e.target.value ? '' : r.debit })}
-                  />
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <button className="btn-ghost" onClick={() => removeRow(i)} disabled={rows.length <= 2} title="Ta bort rad">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {rows.map((r, i) => {
+              const acc = resolve(r.accountNo)
+              const unknown = r.accountNo.trim() !== '' && !acc
+              return (
+                <tr key={i}>
+                  <td className="px-3 py-2 align-top">
+                    <input
+                      className={cn('input', unknown && 'border-red-400')}
+                      list="konto-list"
+                      inputMode="numeric"
+                      placeholder="Kontonr"
+                      value={r.accountNo}
+                      onChange={(e) => updateRow(i, { accountNo: e.target.value })}
+                    />
+                    {acc ? (
+                      <p className="mt-1 truncate text-xs text-gray-500">{acc.name}</p>
+                    ) : unknown ? (
+                      <p className="mt-1 text-xs text-red-600">Okänt konto</p>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2 align-top">
+                    <input className="input" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} />
+                  </td>
+                  <td className="px-3 py-2 align-top">
+                    <input
+                      className="input text-right"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={r.debit}
+                      onChange={(e) => updateRow(i, { debit: e.target.value, credit: e.target.value ? '' : r.credit })}
+                    />
+                  </td>
+                  <td className="px-3 py-2 align-top">
+                    <input
+                      className="input text-right"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={r.credit}
+                      onChange={(e) => updateRow(i, { credit: e.target.value, debit: e.target.value ? '' : r.debit })}
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-right align-top">
+                    <button className="btn-ghost" onClick={() => removeRow(i)} disabled={rows.length <= 2} title="Ta bort rad">
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
           <tfoot className="border-t border-surface-border bg-gray-50 font-medium">
             <tr>
