@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { BookOpen, ListTree, ScrollText, CalendarRange, TrendingUp, Scale, Percent, FileCheck, ArrowLeftRight } from 'lucide-react'
+import { BookOpen, ListTree, ScrollText, CalendarRange, TrendingUp, Scale, Percent, FileCheck, ArrowLeftRight, Library } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const items = [
   { label: 'Verifikationer', to: '/verifikationer', icon: ScrollText },
+  { label: 'Huvudbok', to: '/huvudbok', icon: Library },
   { label: 'Resultatrapport', to: '/rapporter/resultat', icon: TrendingUp },
   { label: 'Balansrapport', to: '/rapporter/balans', icon: Scale },
   { label: 'Momsrapport', to: '/rapporter/moms', icon: Percent },

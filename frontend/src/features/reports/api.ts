@@ -61,12 +61,35 @@ export interface YearEndReport {
   ne: { r: NeField[]; b: NeField[] }
 }
 
+import type { AccountType } from '@/types/bokforing'
+
+export interface LedgerEntry {
+  verificationId: string
+  number: number
+  date: string
+  description: string
+  rowDescription: string | null
+  debit: number
+  credit: number
+  balance: number
+}
+
+export interface LedgerReport {
+  fiscalYear: { id: string; label: string }
+  account: { id: string; number: number; name: string; type: AccountType }
+  entries: LedgerEntry[]
+  totalDebit: number
+  totalCredit: number
+  closingBalance: number
+}
+
 export const reportKeys = {
   all: ['reports'] as const,
   result: (params: object) => [...reportKeys.all, 'result', params] as const,
   balance: (params: object) => [...reportKeys.all, 'balance', params] as const,
   vat: (params: object) => [...reportKeys.all, 'vat', params] as const,
   yearEnd: (params: object) => [...reportKeys.all, 'year-end', params] as const,
+  ledger: (params: object) => [...reportKeys.all, 'ledger', params] as const,
 }
 
 interface Params {
@@ -104,5 +127,13 @@ export function useYearEndReport(params: Params) {
     queryKey: reportKeys.yearEnd(params),
     queryFn: () => api.get<{ success: boolean; data: YearEndReport }>('/reports/year-end', { params }).then((r) => r.data.data),
     enabled: !!params.fiscalYearId,
+  })
+}
+
+export function useLedgerReport(params: { fiscalYearId?: string; accountId?: string }) {
+  return useQuery({
+    queryKey: reportKeys.ledger(params),
+    queryFn: () => api.get<{ success: boolean; data: LedgerReport }>('/reports/ledger', { params }).then((r) => r.data.data),
+    enabled: !!params.fiscalYearId && !!params.accountId,
   })
 }

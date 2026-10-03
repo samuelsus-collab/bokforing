@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../config/database'
-import { ReportQuery } from './reports.schema'
+import { ReportQuery, LedgerQuery } from './reports.schema'
 
 export interface ReportLine {
   accountId: string
@@ -257,5 +257,59 @@ export async function getYearEndReport(q: ReportQuery) {
     result,
     balance,
     ne: { r, b },
+  }
+}
+
+// ─── HUVUDBOK (reskontra per konto) ──────────────────────────────────────────
+// Alla verifikationsrader för ett konto i ett räkenskapsår, kronologiskt, med
+// löpande saldo. Saldots tecken följer kontots normalsida.
+export async function getLedgerReport(q: LedgerQuery) {
+  const fy = await prisma.fiscalYear.findUnique({ where: { id: q.fiscalYearId } })
+  if (!fy) throw new Error('FISCAL_YEAR_NOT_FOUND')
+  const account = await prisma.account.findUnique({ where: { id: q.accountId } })
+  if (!account) throw new Error('ACCOUNT_NOT_FOUND')
+
+  const rows = await prisma.verificationRow.findMany({
+    where: { accountId: q.accountId, verification: { fiscalYearId: q.fiscalYearId } },
+    include: { verification: { select: { id: true, number: true, date: true, description: true } } },
+  })
+
+  // Sortera på verifikationsdatum, sedan verifikationsnummer.
+  rows.sort((a, b) => {
+    const t = a.verification.date.getTime() - b.verification.date.getTime()
+    return t !== 0 ? t : a.verification.number - b.verification.number
+  })
+
+  // Debetsaldo för tillgångar/kostnader, kreditsaldo för skuld/EK/intäkt.
+  const debitSide = account.type === 'TILLGANG' || account.type === 'KOSTNAD'
+
+  let balance = 0
+  let totalDebit = 0
+  let totalCredit = 0
+  const entries = rows.map((r) => {
+    const debit = Number(r.debit)
+    const credit = Number(r.credit)
+    totalDebit = round2(totalDebit + debit)
+    totalCredit = round2(totalCredit + credit)
+    balance = round2(balance + (debitSide ? debit - credit : credit - debit))
+    return {
+      verificationId: r.verification.id,
+      number: r.verification.number,
+      date: r.verification.date,
+      description: r.verification.description,
+      rowDescription: r.description,
+      debit,
+      credit,
+      balance,
+    }
+  })
+
+  return {
+    fiscalYear: { id: fy.id, label: fy.label },
+    account: { id: account.id, number: account.number, name: account.name, type: account.type },
+    entries,
+    totalDebit,
+    totalCredit,
+    closingBalance: balance,
   }
 }

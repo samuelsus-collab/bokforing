@@ -10,6 +10,7 @@ import { VerificationDetailPage } from '@/pages/verifications/VerificationDetail
 import { ResultReportPage } from '@/pages/reports/ResultReportPage'
 import { BalanceReportPage } from '@/pages/reports/BalanceReportPage'
 import { VatReportPage } from '@/pages/reports/VatReportPage'
+import { LedgerPage } from '@/pages/reports/LedgerPage'
 import { YearEndPage } from '@/pages/reports/YearEndPage'
 import { SiePage } from '@/pages/sie/SiePage'
 
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
           { path: 'rapporter/resultat', element: <ResultReportPage /> },
           { path: 'rapporter/balans', element: <BalanceReportPage /> },
           { path: 'rapporter/moms', element: <VatReportPage /> },
+          { path: 'huvudbok', element: <LedgerPage /> },
           { path: 'arsbokslut', element: <YearEndPage /> },
           { path: 'sie', element: <SiePage /> },
           { path: 'kontoplan', element: <AccountsPage /> },
