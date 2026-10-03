@@ -18,6 +18,8 @@ function mapError(err: any, res: Response, next: NextFunction) {
       return res.status(400).json({ success: false, error: { code: 'FISCAL_YEAR_NOT_FOUND', message: 'Räkenskapsåret finns inte' } })
     case 'FISCAL_YEAR_CLOSED':
       return res.status(409).json({ success: false, error: { code: 'FISCAL_YEAR_CLOSED', message: 'Räkenskapsåret är låst (bokslut klart)' } })
+    case 'DATE_OUTSIDE_FISCAL_YEAR':
+      return res.status(400).json({ success: false, error: { code: 'DATE_OUTSIDE_FISCAL_YEAR', message: 'Verifikationsdatumet ligger utanför räkenskapsåret' } })
     case 'ACCOUNT_NOT_FOUND':
       return res.status(400).json({ success: false, error: { code: 'ACCOUNT_NOT_FOUND', message: 'Ett konto i verifikationen finns inte' } })
     default:

@@ -52,6 +52,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   EMPTY_AMOUNT: 'Verifikationen saknar belopp',
   FISCAL_YEAR_CLOSED: 'Räkenskapsåret är låst',
   ACCOUNT_NOT_FOUND: 'Ett valt konto finns inte',
+  DATE_OUTSIDE_FISCAL_YEAR: 'Datumet ligger utanför räkenskapsåret',
 }
 
 function toastError(err: any, fallback: string) {

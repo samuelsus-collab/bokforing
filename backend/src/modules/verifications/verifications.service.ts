@@ -106,38 +106,58 @@ export async function getVerificationById(id: string) {
   return ver
 }
 
+// Verifikationsdatum måste ligga inom räkenskapsåret.
+function assertDateInFiscalYear(date: Date, fy: { startDate: Date; endDate: Date }) {
+  const d = new Date(date.toISOString().slice(0, 10))
+  const start = new Date(fy.startDate.toISOString().slice(0, 10))
+  const end = new Date(fy.endDate.toISOString().slice(0, 10))
+  if (d < start || d > end) throw new Error('DATE_OUTSIDE_FISCAL_YEAR')
+}
+
 export async function createVerification(input: CreateVerificationInput) {
   assertBalanced(input.rows)
+  const date = new Date(input.date)
 
-  return prisma.$transaction(async (tx) => {
-    const fy = await tx.fiscalYear.findUnique({ where: { id: input.fiscalYearId } })
-    if (!fy) throw new Error('FISCAL_YEAR_NOT_FOUND')
-    if (fy.isClosed) throw new Error('FISCAL_YEAR_CLOSED')
+  // Försök några gånger ifall två samtidiga skrivningar krockar på samma
+  // verifikationsnummer (unikt per räkenskapsår) – håller serien obruten.
+  const MAX_ATTEMPTS = 5
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const fy = await tx.fiscalYear.findUnique({ where: { id: input.fiscalYearId } })
+        if (!fy) throw new Error('FISCAL_YEAR_NOT_FOUND')
+        if (fy.isClosed) throw new Error('FISCAL_YEAR_CLOSED')
+        assertDateInFiscalYear(date, fy)
 
-    await assertAccountsExist(tx, input.rows.map((r) => r.accountId))
+        await assertAccountsExist(tx, input.rows.map((r) => r.accountId))
 
-    const number = await nextVerificationNumber(tx, input.fiscalYearId)
+        const number = await nextVerificationNumber(tx, input.fiscalYearId)
 
-    const created = await tx.verification.create({
-      data: {
-        number,
-        fiscalYearId: input.fiscalYearId,
-        date: new Date(input.date),
-        description: input.description,
-        rows: {
-          create: input.rows.map((r, i) => ({
-            accountId: r.accountId,
-            debit: new Prisma.Decimal((r.debit || 0).toFixed(2)),
-            credit: new Prisma.Decimal((r.credit || 0).toFixed(2)),
-            description: r.description ?? null,
-            sortOrder: i,
-          })),
-        },
-      },
-      select: VER_DETAIL_SELECT,
-    })
-    return created
-  })
+        return tx.verification.create({
+          data: {
+            number,
+            fiscalYearId: input.fiscalYearId,
+            date,
+            description: input.description,
+            rows: {
+              create: input.rows.map((r, i) => ({
+                accountId: r.accountId,
+                debit: new Prisma.Decimal((r.debit || 0).toFixed(2)),
+                credit: new Prisma.Decimal((r.credit || 0).toFixed(2)),
+                description: r.description ?? null,
+                sortOrder: i,
+              })),
+            },
+          },
+          select: VER_DETAIL_SELECT,
+        })
+      })
+    } catch (err) {
+      const collision = err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002'
+      if (collision && attempt < MAX_ATTEMPTS) continue
+      throw err
+    }
+  }
 }
 
 export async function updateVerification(id: string, input: UpdateVerificationInput) {
@@ -150,6 +170,7 @@ export async function updateVerification(id: string, input: UpdateVerificationIn
     })
     if (!existing) throw new Error('NOT_FOUND')
     if (existing.fiscalYear.isClosed) throw new Error('FISCAL_YEAR_CLOSED')
+    if (input.date) assertDateInFiscalYear(new Date(input.date), existing.fiscalYear)
 
     if (input.rows) {
       await assertAccountsExist(tx, input.rows.map((r) => r.accountId))

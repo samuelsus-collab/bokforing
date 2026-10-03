@@ -5,6 +5,7 @@ import compression from 'compression'
 import morgan from 'morgan'
 import { config } from './config'
 import { errorHandler } from './middleware/errorHandler.middleware'
+import { apiLimiter } from './middleware/rateLimiter.middleware'
 import authRouter from './modules/auth/auth.router'
 import accountsRouter from './modules/accounts/accounts.router'
 import fiscalYearsRouter from './modules/fiscalYears/fiscalYears.router'
@@ -15,13 +16,16 @@ import sieRouter from './modules/sie/sie.router'
 const app = express()
 
 app.use(helmet())
-app.use(cors({ origin: config.FRONTEND_URL, credentials: true }))
+// Bearer-token används (inte cookies), så credentials behövs inte.
+app.use(cors({ origin: config.FRONTEND_URL }))
 app.use(compression())
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
+
+app.use('/api/v1', apiLimiter)
 
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/accounts', accountsRouter)

@@ -177,8 +177,17 @@ export interface ImportResult {
   warnings: string[]
 }
 
+// Skydd mot orimligt stora/elaka filer (en import sker i en transaktion).
+const MAX_VERIFICATIONS = 20000
+const MAX_ROWS = 200000
+
 export async function importSie(fiscalYearId: string, content: string): Promise<ImportResult> {
   const parsed = parseSie(content)
+
+  const totalRows = parsed.vers.reduce((a, v) => a + v.rows.length, 0) + parsed.ib.length
+  if (parsed.vers.length > MAX_VERIFICATIONS || totalRows > MAX_ROWS) {
+    throw new Error('IMPORT_TOO_LARGE')
+  }
 
   return prisma.$transaction(async (tx) => {
     const fy = await tx.fiscalYear.findUnique({ where: { id: fiscalYearId } })

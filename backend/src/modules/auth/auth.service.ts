@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../../config/database'
 import { config } from '../../config'
-import { LoginInput } from './auth.schema'
+import { LoginInput, ChangePasswordInput } from './auth.schema'
 
 export async function login(input: LoginInput) {
   const user = await prisma.user.findUnique({ where: { email: input.email } })
@@ -30,4 +30,15 @@ export async function me(userId: string) {
   })
   if (!user) throw new Error('NOT_FOUND')
   return user
+}
+
+export async function changePassword(userId: string, input: ChangePasswordInput) {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) throw new Error('NOT_FOUND')
+
+  const ok = await bcrypt.compare(input.currentPassword, user.passwordHash)
+  if (!ok) throw new Error('WRONG_PASSWORD')
+
+  const passwordHash = await bcrypt.hash(input.newPassword, 12)
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } })
 }

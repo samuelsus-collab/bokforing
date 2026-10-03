@@ -34,6 +34,10 @@ export async function importHandler(req: Request, res: Response, next: NextFunct
       res.status(409).json({ success: false, error: { code: 'FISCAL_YEAR_CLOSED', message: 'Räkenskapsåret är låst' } })
       return
     }
+    if (msg === 'IMPORT_TOO_LARGE') {
+      res.status(413).json({ success: false, error: { code: 'IMPORT_TOO_LARGE', message: 'SIE-filen är för stor för att importeras' } })
+      return
+    }
     if (msg.startsWith('IMPORT_UNBALANCED')) {
       res.status(400).json({
         success: false,
