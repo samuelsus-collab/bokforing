@@ -43,13 +43,17 @@ async function sumsByAccount(where: Prisma.VerificationRowWhereInput): Promise<A
   })
   const accounts = await prisma.account.findMany({
     where: { id: { in: grouped.map((g) => g.accountId) } },
-    select: { id: true, number: true, name: true, type: true },
+    select: { id: true, number: true, name: true, type: true, vatRate: true },
   })
   const byId = new Map(accounts.map((a) => [a.id, a]))
   return grouped
     .map((g) => {
       const acc = byId.get(g.accountId)!
-      return { account: acc, debit: Number(g._sum.debit ?? 0), credit: Number(g._sum.credit ?? 0) }
+      return {
+        account: { ...acc, vatRate: acc.vatRate != null ? Number(acc.vatRate) : null },
+        debit: Number(g._sum.debit ?? 0),
+        credit: Number(g._sum.credit ?? 0),
+      }
     })
     .sort((a, b) => a.account.number - b.account.number)
 }
