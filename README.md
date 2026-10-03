@@ -110,3 +110,40 @@ npm run build        # tsc && vite build
 - Verifikationsnummer är en obruten serie per räkenskapsår, med start på 1.
 - Ett låst räkenskapsår (bokslut) hindrar ändring/borttag av verifikationer. Rättelse sker då via
   en ny verifikation (kommande fas).
+
+## Drift (produktion) & backup
+
+Hela stacken (databas + backend + frontend via nginx) kan köras med den medföljande
+produktionskonfigurationen. Endast frontend (port 80) exponeras utåt.
+
+```bash
+cp .env.example .env            # sätt POSTGRES_PASSWORD och JWT_SECRET
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Appen nås sedan på `http://<serverns-adress>/`. Första starten kör migreringar automatiskt;
+seeda kontoplan + första användaren en gång:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend npm run db:seed
+```
+
+**Backup (viktigt – spara bokföringen i 7 år):** ta regelbundna dumpar av databasen.
+
+```bash
+# Säkerhetskopiera
+docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U bokforing bokforing > backup-$(date +%F).sql
+# Återställ
+cat backup-YYYY-MM-DD.sql | docker compose -f docker-compose.prod.yml exec -T postgres psql -U bokforing bokforing
+```
+
+Lägg gärna upp ovanstående `pg_dump` som ett schemalagt jobb (t.ex. `cron`) och spara kopiorna
+på en annan plats.
+
+## Säkerhet
+
+- Lösenord hashas med bcrypt; JWT för inloggning; rate limiting på login och API.
+- Verifikationer balanskontrolleras; räkenskapsår kan låsas (bokslut).
+- Kända `npm audit`-fynd som återstår gäller **utvecklingsverktyg** (vite/esbuild/nodemon/vitest)
+  och följer inte med i den byggda, driftsatta appen. De kräver brytande major-uppgraderingar och
+  är därför medvetet uppskjutna. Runtime-beroenden hålls fria från kända sårbarheter.
