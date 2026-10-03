@@ -28,7 +28,7 @@ export function LoginPage() {
     try {
       const res = await loginMutation.mutateAsync(data)
       login(res.token, res.user)
-      navigate('/verifikationer')
+      navigate('/oversikt')
     } catch {
       toast.error('Fel e-post eller lösenord')
     }

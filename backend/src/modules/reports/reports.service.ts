@@ -7,6 +7,7 @@ import {
   computeBalance,
   computeVat,
   computeYearEnd,
+  sumRange,
   type AccountSum,
 } from './reports.calc'
 
@@ -86,6 +87,54 @@ export async function getYearEndReport(q: ReportQuery) {
     result,
     balance,
     ne,
+  }
+}
+
+// ─── ÖVERSIKT / DASHBOARD ────────────────────────────────────────────────────
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+
+export async function getDashboard(q: ReportQuery) {
+  const { fy, where } = await buildRowFilter(q)
+  const sums = await sumsByAccount(where)
+
+  const { totalIncome, totalExpenses, result } = computeResult(sums)
+  const liquidity = sumRange(sums, 1900, 1999, 'debit') // kassa + bank
+  const vat = computeVat(sums)
+
+  // Månadsvis intäkter/kostnader (för grafen).
+  const rows = await prisma.verificationRow.findMany({
+    where,
+    select: {
+      debit: true,
+      credit: true,
+      verification: { select: { date: true } },
+      account: { select: { type: true } },
+    },
+  })
+  const months = MONTH_LABELS.map((label, i) => ({ month: i + 1, label, income: 0, expenses: 0, result: 0 }))
+  for (const r of rows) {
+    const m = new Date(r.verification.date).getUTCMonth()
+    const debit = Number(r.debit)
+    const credit = Number(r.credit)
+    if (r.account.type === 'INTAKT') months[m].income += credit - debit
+    else if (r.account.type === 'KOSTNAD') months[m].expenses += debit - credit
+  }
+  for (const mo of months) {
+    mo.income = round2(mo.income)
+    mo.expenses = round2(mo.expenses)
+    mo.result = round2(mo.income - mo.expenses)
+  }
+
+  return {
+    fiscalYear: { id: fy.id, label: fy.label, isClosed: fy.isClosed },
+    income: totalIncome,
+    expenses: totalExpenses,
+    result,
+    liquidity,
+    netVat: vat.netVat,
+    hasVatDeviation: vat.hasDeviation,
+    verificationCount: await prisma.verification.count({ where: { fiscalYearId: fy.id } }),
+    months,
   }
 }
 

@@ -12,5 +12,6 @@ router.get('/balance', validate(reportQuerySchema, 'query'), ctrl.balanceHandler
 router.get('/vat', validate(reportQuerySchema, 'query'), ctrl.vatHandler)
 router.get('/year-end', validate(reportQuerySchema, 'query'), ctrl.yearEndHandler)
 router.get('/ledger', validate(ledgerQuerySchema, 'query'), ctrl.ledgerHandler)
+router.get('/dashboard', validate(reportQuerySchema, 'query'), ctrl.dashboardHandler)
 
 export default router
